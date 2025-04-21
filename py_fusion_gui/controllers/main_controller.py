@@ -55,6 +55,9 @@ class MainController(QObject):
         self.view.merge_requested.connect(self._on_merge_requested)
         self.view.cancel_requested.connect(self._on_cancel_requested)
 
+        # Settings signals
+        self.view.include_hidden_changed.connect(self._on_include_hidden_changed)
+
     def _connect_model_signals(self):
         """Connect signals from the models."""
         # Analysis model signals
@@ -95,6 +98,9 @@ class MainController(QObject):
                     if self.settings_model.recent_destinations:
                         self.settings_model.recent_destinations.pop(0)
                     self.settings_model.save_settings()
+
+        # Load other settings
+        self.view.set_include_hidden(self.settings_model.include_hidden_files)
 
     # View signal handlers
     @pyqtSlot(list)
@@ -150,8 +156,11 @@ class MainController(QObject):
         # Add destination folder
         self.settings_model.add_recent_destination(self.destination_folder)
 
+        # Get the include_hidden setting
+        include_hidden = self.settings_model.include_hidden_files
+
         # Start merge
-        self.merge_model.start_merge(self.destination_folder, self.source_folders, simulate)
+        self.merge_model.start_merge(self.destination_folder, self.source_folders, simulate, include_hidden)
 
     @pyqtSlot()
     def _on_cancel_requested(self):
@@ -354,3 +363,20 @@ class MainController(QObject):
             "Merge Failed",
             f"The merge operation failed:\n\n{error}"
         )
+
+    @pyqtSlot(bool)
+    def _on_include_hidden_changed(self, include_hidden):
+        """Handle include hidden files setting changed.
+
+        Args:
+            include_hidden: Whether to include hidden files
+        """
+        # Update the settings model
+        self.settings_model.include_hidden_files = include_hidden
+        self.settings_model.save_settings()
+
+        # Show a status message
+        if include_hidden:
+            self.view.set_status_message("Hidden files will be included in merge operations")
+        else:
+            self.view.set_status_message("Hidden files will be skipped in merge operations")

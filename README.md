@@ -89,6 +89,13 @@ When a source folder becomes empty after merging (all files moved to destination
 
 To manage cached folders, go to Edit > Manage Cached Empty Folders in the menu.
 
+#### Hidden Files
+
+By default, hidden files (like .DS_Store on macOS or files with the hidden attribute on Windows) are skipped during the merge operation. You can change this behavior in two ways:
+
+- In the GUI: Toggle the "Include Hidden Files" option in the Options menu
+- In the CLI: Use the `--include-hidden` flag when running the command
+
 ### Command Line Options
 
 ```bash
@@ -100,6 +107,7 @@ Shows all available options:
 ```
 usage: index.py [-h] [--dest DEST] [--source SOURCE [SOURCE ...]]
                 [--simulate] [--verbose] [--pattern PATTERN]
+                [--include-hidden]
 
 Merge multiple resource folders into a destination folder.
 
@@ -142,6 +150,12 @@ python index.py --simulate
 
 ```bash
 python index.py --verbose
+```
+
+#### Include hidden files
+
+```bash
+python index.py --include-hidden
 ```
 
 ## Troubleshooting

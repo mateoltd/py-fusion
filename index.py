@@ -71,6 +71,9 @@ def setup_arguments() -> argparse.Namespace:
     parser.add_argument('--pattern', '-p', type=str, default=None,
                         help='Glob pattern to find source folders (e.g.: "RESOURCES*")')
 
+    parser.add_argument('--include-hidden', '-H', action='store_true',
+                        help='Include hidden files and folders in the merge (default: hidden files are skipped)')
+
     return parser.parse_args()
 
 def move_or_rename(src_path: str, dst_path: str, simulate: bool = False) -> None:
@@ -123,7 +126,7 @@ def move_or_rename(src_path: str, dst_path: str, simulate: bool = False) -> None
         logger.error(f"Error moving {src_path}: {str(e)}")
         STATS['errors'] += 1
 
-def merge_directories(source: str, destination: str, simulate: bool = False) -> None:
+def merge_directories(source: str, destination: str, simulate: bool = False, include_hidden: bool = False) -> None:
     """
     Recursively merges the content of the 'source' folder into the 'destination' folder.
 
@@ -131,6 +134,7 @@ def merge_directories(source: str, destination: str, simulate: bool = False) -> 
         source: Source folder path
         destination: Destination folder path
         simulate: If True, only simulates the operation without making actual changes
+        include_hidden: If True, hidden files will be included in the merge
     """
     try:
         if not os.path.exists(destination):
@@ -143,8 +147,23 @@ def merge_directories(source: str, destination: str, simulate: bool = False) -> 
             src_path = os.path.join(source, item)
             dst_path = os.path.join(destination, item)
 
+            # Check if the item is hidden
+            try:
+                # Import the is_hidden_file function if available
+                from py_fusion_gui.utils.platform_utils import is_hidden_file
+                is_hidden = is_hidden_file(src_path)
+            except ImportError:
+                # Fall back to simple check if the function is not available
+                is_hidden = item.startswith('.')
+
+            # Skip hidden files unless include_hidden is True
+            if is_hidden and not include_hidden:
+                logger.debug(f"Skipped hidden item: {src_path}")
+                STATS['files_skipped'] += 1
+                continue
+
             if os.path.isdir(src_path):
-                merge_directories(src_path, dst_path, simulate)
+                merge_directories(src_path, dst_path, simulate, include_hidden)
             else:
                 move_or_rename(src_path, dst_path, simulate)
 
@@ -175,7 +194,7 @@ def get_source_folders(args: argparse.Namespace) -> List[str]:
             "RESOURCES 15"
         ]
 
-def merge_folders(destination: str, source_folders: List[str], simulate: bool = False) -> None:
+def merge_folders(destination: str, source_folders: List[str], simulate: bool = False, include_hidden: bool = False) -> None:
     """
     Merges multiple source folders into a destination folder.
 
@@ -183,6 +202,7 @@ def merge_folders(destination: str, source_folders: List[str], simulate: bool = 
         destination: Destination folder path
         source_folders: List of source folder paths
         simulate: If True, only simulates the operation without making actual changes
+        include_hidden: If True, hidden files will be included in the merge
     """
     try:
         if not os.path.exists(destination) and not simulate:
@@ -200,8 +220,23 @@ def merge_folders(destination: str, source_folders: List[str], simulate: bool = 
                 src_item_path = os.path.join(folder, item)
                 dst_item_path = os.path.join(destination, item)
 
+                # Check if the item is hidden
+                try:
+                    # Import the is_hidden_file function if available
+                    from py_fusion_gui.utils.platform_utils import is_hidden_file
+                    is_hidden = is_hidden_file(src_item_path)
+                except ImportError:
+                    # Fall back to simple check if the function is not available
+                    is_hidden = item.startswith('.')
+
+                # Skip hidden files unless include_hidden is True
+                if is_hidden and not include_hidden:
+                    logger.debug(f"Skipped hidden item: {src_item_path}")
+                    STATS['files_skipped'] += 1
+                    continue
+
                 if os.path.isdir(src_item_path):
-                    merge_directories(src_item_path, dst_item_path, simulate)
+                    merge_directories(src_item_path, dst_item_path, simulate, include_hidden)
                 else:
                     move_or_rename(src_item_path, dst_item_path, simulate)
 
@@ -242,8 +277,12 @@ def main() -> None:
     logger.info(f"Destination folder: {args.dest}")
     logger.info(f"Source folders: {', '.join(source_folders)}")
 
+    # Show if hidden files will be included
+    if args.include_hidden:
+        logger.info("Hidden files and folders will be included in the merge")
+
     # Perform the merge
-    merge_folders(args.dest, source_folders, args.simulate)
+    merge_folders(args.dest, source_folders, args.simulate, args.include_hidden)
 
     # Show statistics
     show_statistics()

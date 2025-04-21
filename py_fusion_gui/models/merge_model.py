@@ -24,18 +24,20 @@ class MergeWorker(QThread):
     operation_completed = pyqtSignal(dict)
     operation_failed = pyqtSignal(str)
 
-    def __init__(self, destination, sources, simulate=False):
+    def __init__(self, destination, sources, simulate=False, include_hidden=False):
         """Initialize the merge worker.
 
         Args:
             destination: Path to the destination folder
             sources: List of source folder paths
             simulate: Whether to run in simulation mode
+            include_hidden: Whether to include hidden files in the merge
         """
         super().__init__()
         self.destination = destination
         self.sources = sources
         self.simulate = simulate
+        self.include_hidden = include_hidden
         self.is_cancelled = False
 
     def run(self):
@@ -54,7 +56,7 @@ class MergeWorker(QThread):
             temp_manager = TempFolderManager()
 
             # Perform the merge
-            merge_folders(self.destination, self.sources, self.simulate)
+            merge_folders(self.destination, self.sources, self.simulate, self.include_hidden)
 
             # Check for empty source folders after merge and cache them
             for source in self.sources:
@@ -117,16 +119,17 @@ class MergeModel(QObject):
         super().__init__()
         self.worker = None
 
-    def start_merge(self, destination, sources, simulate=False):
+    def start_merge(self, destination, sources, simulate=False, include_hidden=False):
         """Start a merge operation.
 
         Args:
             destination: Path to the destination folder
             sources: List of source folder paths
             simulate: Whether to run in simulation mode
+            include_hidden: Whether to include hidden files in the merge
         """
         # Create and configure the worker
-        self.worker = MergeWorker(destination, sources, simulate)
+        self.worker = MergeWorker(destination, sources, simulate, include_hidden)
 
         # Connect signals
         self.worker.progress_updated.connect(self.progress_updated)

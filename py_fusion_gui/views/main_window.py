@@ -30,6 +30,7 @@ class MainWindow(QMainWindow):
     analyze_requested = pyqtSignal()
     merge_requested = pyqtSignal(bool)  # bool: simulate
     cancel_requested = pyqtSignal()
+    include_hidden_changed = pyqtSignal(bool)  # bool: include_hidden
 
     def __init__(self):
         """Initialize the main window."""
@@ -225,9 +226,21 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self._on_about_clicked)
         help_menu.addAction(about_action)
 
+        # Options menu
+        options_menu = QMenu("&Options", self)
+
+        # Include hidden files action
+        self.include_hidden_action = QAction("Include Hidden Files", self)
+        self.include_hidden_action.setCheckable(True)
+        self.include_hidden_action.setChecked(False)  # Default
+        self.include_hidden_action.setToolTip("Include hidden files and folders (like .DS_Store) in the merge operation")
+        self.include_hidden_action.triggered.connect(self._on_include_hidden_toggled)
+        options_menu.addAction(self.include_hidden_action)
+
         # Add menus to menu bar
         menu_bar.addMenu(file_menu)
         menu_bar.addMenu(edit_menu)
+        menu_bar.addMenu(options_menu)
         menu_bar.addMenu(help_menu)
 
         self.setMenuBar(menu_bar)
@@ -496,6 +509,15 @@ class MainWindow(QMainWindow):
             "<p>Copyright © 2023</p>"
         )
 
+    def _on_include_hidden_toggled(self, checked):
+        """Handle include hidden files toggle.
+
+        Args:
+            checked: Whether the option is checked
+        """
+        # Emit a signal to notify that the include_hidden setting has changed
+        self.include_hidden_changed.emit(checked)
+
     def _update_source_folders(self):
         """Update the list of source folders and emit signal."""
         folders = [self.source_list.item(i).text() for i in range(self.source_list.count())]
@@ -595,6 +617,14 @@ class MainWindow(QMainWindow):
         if icon:
             item.setIcon(icon)
         self.details_list.addItem(item)
+
+    def set_include_hidden(self, include_hidden):
+        """Set the include hidden files option.
+
+        Args:
+            include_hidden: Whether to include hidden files
+        """
+        self.include_hidden_action.setChecked(include_hidden)
 
     def set_operation_in_progress(self, in_progress):
         """Set the UI state based on whether an operation is in progress.

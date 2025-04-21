@@ -102,6 +102,37 @@ def fix_path_for_platform(path):
         return path.replace('/', '\\')
     return path
 
+def is_hidden_file(path):
+    """Check if a file or directory is hidden.
+
+    This function checks if a file or directory is hidden based on the platform-specific
+    criteria (dot prefix on Unix/macOS, hidden attribute on Windows).
+
+    Args:
+        path: Path to the file or directory
+
+    Returns:
+        bool: True if the file or directory is hidden, False otherwise
+    """
+    # Get the file/directory name without the path
+    name = os.path.basename(path)
+
+    # On Unix/macOS, hidden files start with a dot
+    if get_platform() in ['macos', 'linux']:
+        return name.startswith('.')
+
+    # On Windows, use the hidden attribute
+    elif get_platform() == 'windows':
+        import stat
+        try:
+            return bool(os.stat(path).st_file_attributes & stat.FILE_ATTRIBUTE_HIDDEN)
+        except (AttributeError, OSError):
+            # Fall back to name-based check if attribute check fails
+            return name.startswith('.')
+
+    # Default fallback
+    return name.startswith('.')
+
 def get_multiple_directories(parent=None, title="Select Folders", directory=None):
     """Get multiple directories using the native file dialog.
 
