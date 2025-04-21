@@ -71,15 +71,30 @@ class MainController(QObject):
 
     def _load_settings(self):
         """Load settings and update the UI."""
-        # Load recent source folders
+        # Load recent source folders and validate they exist
         if self.settings_model.recent_sources:
+            # Update the UI (this will filter out non-existent folders and emit the signal)
             self.view.set_source_folders(self.settings_model.recent_sources)
-            self.source_folders = self.settings_model.recent_sources
 
-        # Load recent destination folder
+            # The source_folders_changed signal will be emitted by set_source_folders,
+            # which will update self.source_folders and save the settings
+
+        # Load recent destination folder and validate it exists
         if self.settings_model.recent_destinations:
-            self.view.set_destination_folder(self.settings_model.recent_destinations[0])
-            self.destination_folder = self.settings_model.recent_destinations[0]
+            dest_folder = self.settings_model.recent_destinations[0]
+            self.view.set_destination_folder(dest_folder)  # This will validate the folder
+
+            # Update the controller's state based on what's shown in the UI
+            if self.view.dest_path_label.text() != "No folder selected":
+                self.destination_folder = self.view.dest_path_label.text()
+            else:
+                self.destination_folder = ""
+
+                # Update settings model if needed
+                if not os.path.exists(dest_folder):
+                    if self.settings_model.recent_destinations:
+                        self.settings_model.recent_destinations.pop(0)
+                    self.settings_model.save_settings()
 
     # View signal handlers
     @pyqtSlot(list)
@@ -90,6 +105,12 @@ class MainController(QObject):
             folders: List of source folder paths
         """
         self.source_folders = folders
+
+        # Save source folders to settings
+        self.settings_model.recent_sources = folders.copy()  # Make a copy to avoid reference issues
+        self.settings_model.save_settings()
+
+        print(f"Source folders updated and saved: {folders}")
 
     @pyqtSlot(str)
     def _on_destination_folder_changed(self, folder):
@@ -122,8 +143,11 @@ class MainController(QObject):
             return
 
         # Update recent folders
-        for folder in self.source_folders:
-            self.settings_model.add_recent_source(folder)
+        # Save source folders directly to settings
+        self.settings_model.recent_sources = self.source_folders.copy()  # Make a copy to avoid reference issues
+        self.settings_model.save_settings()
+
+        # Add destination folder
         self.settings_model.add_recent_destination(self.destination_folder)
 
         # Start merge

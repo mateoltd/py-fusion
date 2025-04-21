@@ -41,6 +41,11 @@ class MainWindow(QMainWindow):
         # Initialize UI components
         self._init_ui()
 
+        # Set up a timer to periodically check if folders exist
+        self.folder_check_timer = QTimer(self)
+        self.folder_check_timer.timeout.connect(self._check_folders_exist)
+        self.folder_check_timer.start(10000)  # Check every 10 seconds
+
     def _init_ui(self):
         """Initialize the user interface."""
         # Create central widget and main layout
@@ -353,6 +358,15 @@ class MainWindow(QMainWindow):
         )
 
         if folder:
+            # Validate that the folder exists
+            if not os.path.exists(folder):
+                QMessageBox.warning(
+                    self,
+                    "Invalid Folder",
+                    f"The selected folder does not exist: {folder}"
+                )
+                return
+
             # Check if folder is already in the list
             items = [self.source_list.item(i).text() for i in range(self.source_list.count())]
             if folder not in items:
@@ -382,6 +396,15 @@ class MainWindow(QMainWindow):
         )
 
         if folder:
+            # Validate that the folder exists
+            if not os.path.exists(folder):
+                QMessageBox.warning(
+                    self,
+                    "Invalid Folder",
+                    f"The selected folder does not exist: {folder}"
+                )
+                return
+
             self.dest_path_label.setText(folder)
             self.destination_folder_changed.emit(folder)
 
@@ -452,6 +475,7 @@ class MainWindow(QMainWindow):
     def _update_source_folders(self):
         """Update the list of source folders and emit signal."""
         folders = [self.source_list.item(i).text() for i in range(self.source_list.count())]
+        print(f"Emitting source_folders_changed signal with folders: {folders}")
         self.source_folders_changed.emit(folders)
 
     def _validate_folders(self):
@@ -485,7 +509,13 @@ class MainWindow(QMainWindow):
         """
         self.source_list.clear()
         for folder in folders:
-            self.source_list.addItem(folder)
+            if os.path.exists(folder):
+                self.source_list.addItem(folder)
+            else:
+                print(f"Source folder does not exist, skipping: {folder}")
+
+        # Emit signal to notify that source folders have changed
+        self._update_source_folders()
 
     def set_destination_folder(self, folder):
         """Set the destination folder.
@@ -493,9 +523,11 @@ class MainWindow(QMainWindow):
         Args:
             folder: Destination folder path
         """
-        if folder:
+        if folder and os.path.exists(folder):
             self.dest_path_label.setText(folder)
         else:
+            if folder and not os.path.exists(folder):
+                print(f"Destination folder does not exist, clearing: {folder}")
             self.dest_path_label.setText("No folder selected")
 
     def set_progress(self, value, maximum=100):
@@ -568,3 +600,29 @@ class MainWindow(QMainWindow):
         else:
             self.progress_bar.setVisible(True)  # Keep visible but reset
             self.progress_bar.setValue(0)
+
+    def _check_folders_exist(self):
+        """Periodically check if selected folders still exist."""
+        # Check source folders
+        items_to_remove = []
+        for i in range(self.source_list.count()):
+            folder = self.source_list.item(i).text()
+            if not os.path.exists(folder):
+                items_to_remove.append(i)
+                print(f"Source folder no longer exists, will remove: {folder}")
+
+        # Remove non-existent source folders (in reverse order to avoid index issues)
+        for i in sorted(items_to_remove, reverse=True):
+            self.source_list.takeItem(i)
+
+        # If any folders were removed, update the source folders
+        if items_to_remove:
+            self._update_source_folders()
+
+        # Check destination folder
+        if self.dest_path_label.text() != "No folder selected":
+            folder = self.dest_path_label.text()
+            if not os.path.exists(folder):
+                print(f"Destination folder no longer exists, clearing: {folder}")
+                self.dest_path_label.setText("No folder selected")
+                self.destination_folder_changed.emit("")

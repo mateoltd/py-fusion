@@ -16,7 +16,9 @@ class SettingsModel:
 
     def __init__(self):
         """Initialize the settings model."""
-        self.settings = QSettings()
+        # Initialize QSettings with organization and application name
+        self.settings = QSettings("Py-Fusion", "Py-Fusion")
+        print(f"QSettings initialized with path: {self.settings.fileName()}")
         self.load_settings()
 
     def load_settings(self):
@@ -39,6 +41,8 @@ class SettingsModel:
         self.confirm_before_merge = self.settings.value("confirm_before_merge", True, type=bool)
         self.show_advanced_options = self.settings.value("show_advanced_options", False, type=bool)
 
+        print(f"Settings loaded. Recent sources: {self.recent_sources}")
+
     def save_settings(self):
         """Save current settings to QSettings."""
         self.settings.setValue("theme", self.theme)
@@ -48,6 +52,8 @@ class SettingsModel:
         self.settings.setValue("confirm_before_merge", self.confirm_before_merge)
         self.settings.setValue("show_advanced_options", self.show_advanced_options)
         self.settings.sync()
+
+        print(f"Settings saved. Recent sources: {self.recent_sources}")
 
     def add_recent_source(self, path):
         """Add a path to recent sources."""
