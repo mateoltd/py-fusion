@@ -8,11 +8,13 @@ handling duplicates intelligently, and preserving directory structures.
 
 import sys
 import os
+import atexit
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QSettings
 from py_fusion_gui.controllers.main_controller import MainController
 from py_fusion_gui.views.main_window import MainWindow
 from py_fusion_gui.models.settings_model import SettingsModel
+from py_fusion_gui.utils.temp_folder_manager import TempFolderManager
 
 def main():
     """Main entry point for the application."""
@@ -27,6 +29,10 @@ def main():
 
     # Apply theme based on settings
     settings.apply_theme(app)
+
+    # Initialize the temporary folder manager
+    temp_manager = TempFolderManager()
+    print(f"Temporary folder manager initialized. Temp directory: {temp_manager.temp_dir}")
 
     # Create main window
     main_window = MainWindow()

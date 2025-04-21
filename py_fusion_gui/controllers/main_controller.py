@@ -175,6 +175,10 @@ class MainController(QObject):
         self.view.set_status_message("Analysis completed")
 
         # Update summary
+        empty_folders_info = ""
+        if 'empty_source_folders' in stats and stats['empty_source_folders'] > 0:
+            empty_folders_info = f"<li><b>{stats['empty_source_folders']}</b> empty source folders detected (will be cleaned up after merge)</li>"
+
         summary = f"""
         <h2>Analysis Results</h2>
         <p>The following actions will be performed:</p>
@@ -183,6 +187,7 @@ class MainController(QObject):
             <li><b>{stats['files_to_skip']}</b> files will be skipped (identical)</li>
             <li><b>{stats['files_to_rename']}</b> files will be renamed</li>
             <li><b>{stats['directories_to_create']}</b> directories will be created</li>
+            {empty_folders_info}
         </ul>
         <p>Total files: <b>{stats['total_files']}</b></p>
         """
@@ -268,6 +273,16 @@ class MainController(QObject):
         self.view.set_status_message("Merge completed")
 
         # Update summary
+        # Check for cached empty source folders
+        from py_fusion_gui.utils.temp_folder_manager import TempFolderManager
+        temp_manager = TempFolderManager()
+        cached_folders = temp_manager.get_cached_folders_info()
+        cached_folders_count = len(cached_folders)
+
+        empty_folders_info = ""
+        if cached_folders_count > 0:
+            empty_folders_info = f"<li><b>{cached_folders_count}</b> empty source folders cached (available in Edit > Manage Cached Empty Folders)</li>"
+
         summary = f"""
         <h2>Merge Completed</h2>
         <p>The following actions were performed:</p>
@@ -276,12 +291,17 @@ class MainController(QObject):
             <li><b>{stats['files_skipped']}</b> files skipped (identical)</li>
             <li><b>{stats['files_renamed']}</b> files renamed</li>
             <li><b>{stats['directories_created']}</b> directories created</li>
+            {empty_folders_info}
         </ul>
         <p>Errors: <b>{stats['errors']}</b></p>
         """
         self.view.set_summary_text(summary)
 
         # Show completion message
+        empty_folders_msg = ""
+        if cached_folders_count > 0:
+            empty_folders_msg = f"\nEmpty source folders cached: {cached_folders_count} (available in Edit > Manage Cached Empty Folders)"
+
         QMessageBox.information(
             self.view,
             "Merge Completed",
@@ -291,6 +311,7 @@ class MainController(QObject):
             f"Files renamed: {stats['files_renamed']}\n"
             f"Directories created: {stats['directories_created']}\n"
             f"Errors: {stats['errors']}"
+            f"{empty_folders_msg}"
         )
 
     @pyqtSlot(str)

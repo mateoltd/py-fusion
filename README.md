@@ -12,6 +12,7 @@ A tool for merging multiple resource folders into one, intelligently handling du
 - Simulation mode to preview changes without making them
 - Detailed operation statistics
 - Support for glob patterns to select source folders
+- Automatic caching of empty source folders after merging (with ability to restore them later)
 
 ## Requirements
 
@@ -75,6 +76,17 @@ The GUI provides a more user-friendly way to:
 - Analyze the merge operation before executing it
 - View detailed statistics and progress
 - Use dark or light theme
+- Manage cached empty folders
+
+#### Cached Empty Folders
+
+When a source folder becomes empty after merging (all files moved to destination), it is automatically cached in a temporary location. This allows you to:
+
+- Restore the folder to its original location if needed
+- Save the folder to a different location
+- Delete the folder permanently
+
+To manage cached folders, go to Edit > Manage Cached Empty Folders in the menu.
 
 ### Command Line Options
 

@@ -17,6 +17,8 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QAction
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QSettings, QTimer
 from PyQt6.QtGui import QIcon, QFont, QPixmap
+from py_fusion_gui.utils.temp_folder_manager import TempFolderManager
+from py_fusion_gui.views.cached_folders_dialog import CachedFoldersDialog
 
 class MainWindow(QMainWindow):
     """Main application window."""
@@ -175,6 +177,14 @@ class MainWindow(QMainWindow):
         )
         clear_dest_action.triggered.connect(self._on_clear_destination_clicked)
         edit_menu.addAction(clear_dest_action)
+
+        # Manage cached folders action
+        cached_folders_action = QAction(
+            qta.icon('fa5s.folder-open', color='#2196F3'),
+            "Manage Cached Empty Folders", self
+        )
+        cached_folders_action.triggered.connect(self._on_manage_cached_folders_clicked)
+        edit_menu.addAction(cached_folders_action)
 
         edit_menu.addSeparator()
 
@@ -422,6 +432,11 @@ class MainWindow(QMainWindow):
         """Handle preferences button click."""
         # This will be implemented in a separate preferences dialog
         pass
+
+    def _on_manage_cached_folders_clicked(self):
+        """Handle manage cached folders button click."""
+        dialog = CachedFoldersDialog(self)
+        dialog.exec()
 
     def _on_about_clicked(self):
         """Handle about button click."""
