@@ -10,6 +10,5 @@ dependencies:
     - PyQt6-Qt6>=6.5.0
     - PyQt6-sip>=13.5.0
     - qtawesome>=1.2.3
-    # For macOS native file dialogs (only installed on macOS)
     - pyobjc-core>=9.0.1; platform_system=="Darwin"
     - pyobjc-framework-Cocoa>=9.0.1; platform_system=="Darwin"
