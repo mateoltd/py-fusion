@@ -1,0 +1,59 @@
+name: Build All Platforms
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    uses: ./.github/workflows/build-macos.yml
+    
+  build-linux:
+    uses: ./.github/workflows/build-linux.yml
+    
+  build-windows:
+    uses: ./.github/workflows/build-windows.yml
+    
+  create-release:
+    needs: [build-macos, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Py-Fusion ${{ github.ref_name }}
+        body: |
+          # Py-Fusion ${{ github.ref_name }}
+          
+          A modern tool for merging multiple folders intelligently.
+          
+          ## Downloads
+          
+          ### macOS
+          - [CLI Version](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/py-fusion-cli-macos)
+          - [GUI Version (DMG)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/Py-Fusion.dmg)
+          
+          ### Linux
+          - [CLI Version (tar.gz)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/py-fusion-cli-linux.tar.gz)
+          - [GUI Version (AppImage)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/Py-Fusion-x86_64.AppImage)
+          
+          ### Windows
+          - [CLI Version (ZIP)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/py-fusion-cli-windows.zip)
+          - [GUI Version (Installer)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/Py-Fusion-Setup.exe)
+        files: |
+          artifacts/py-fusion-cli-macos/py-fusion
+          artifacts/py-fusion-gui-macos/Py-Fusion.dmg
+          artifacts/py-fusion-cli-linux/py-fusion-cli-linux.tar.gz
+          artifacts/py-fusion-gui-linux/Py-Fusion-x86_64.AppImage
+          artifacts/py-fusion-cli-windows/py-fusion-cli-windows.zip
+          artifacts/py-fusion-gui-windows/Py-Fusion-Setup.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
