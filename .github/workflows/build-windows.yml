@@ -40,49 +40,52 @@ jobs:
         # Install NSIS
         choco install nsis -y
 
-        # Create NSIS script
-        Set-Content -Path installer.nsi -Value @'
-!include "MUI2.nsh"
-Name "Py-Fusion"
-OutFile "dist\Py-Fusion-Setup.exe"
-InstallDir "$PROGRAMFILES\Py-Fusion"
-RequestExecutionLevel admin
+        # Create NSIS script file line by line
+        $nsiContent = @(
+            '!include "MUI2.nsh"',
+            'Name "Py-Fusion"',
+            'OutFile "dist\Py-Fusion-Setup.exe"',
+            'InstallDir "$PROGRAMFILES\Py-Fusion"',
+            'RequestExecutionLevel admin',
+            '',
+            '!insertmacro MUI_PAGE_WELCOME',
+            '!insertmacro MUI_PAGE_DIRECTORY',
+            '!insertmacro MUI_PAGE_INSTFILES',
+            '!insertmacro MUI_PAGE_FINISH',
+            '!insertmacro MUI_UNPAGE_CONFIRM',
+            '!insertmacro MUI_UNPAGE_INSTFILES',
+            '!insertmacro MUI_LANGUAGE "English"',
+            '',
+            'Section "Install"',
+            '  SetOutPath "$INSTDIR"',
+            '  File "dist\py-fusion-gui.exe"',
+            '  File "dist\py-fusion.exe"',
+            '  File "LICENSE"',
+            '  File "README.md"',
+            '  WriteUninstaller "$INSTDIR\uninstall.exe"',
+            '  CreateDirectory "$SMPROGRAMS\Py-Fusion"',
+            '  CreateShortcut "$SMPROGRAMS\Py-Fusion\Py-Fusion.lnk" "$INSTDIR\py-fusion-gui.exe"',
+            '  CreateShortcut "$SMPROGRAMS\Py-Fusion\Uninstall.lnk" "$INSTDIR\uninstall.exe"',
+            '  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion" "DisplayName" "Py-Fusion"',
+            '  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""',
+            'SectionEnd',
+            '',
+            'Section "Uninstall"',
+            '  Delete "$INSTDIR\py-fusion-gui.exe"',
+            '  Delete "$INSTDIR\py-fusion.exe"',
+            '  Delete "$INSTDIR\LICENSE"',
+            '  Delete "$INSTDIR\README.md"',
+            '  Delete "$INSTDIR\uninstall.exe"',
+            '  RMDir "$INSTDIR"',
+            '  Delete "$SMPROGRAMS\Py-Fusion\Py-Fusion.lnk"',
+            '  Delete "$SMPROGRAMS\Py-Fusion\Uninstall.lnk"',
+            '  RMDir "$SMPROGRAMS\Py-Fusion"',
+            '  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion"',
+            'SectionEnd'
+        )
 
-!insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_DIRECTORY
-!insertmacro MUI_PAGE_INSTFILES
-!insertmacro MUI_PAGE_FINISH
-!insertmacro MUI_UNPAGE_CONFIRM
-!insertmacro MUI_UNPAGE_INSTFILES
-!insertmacro MUI_LANGUAGE "English"
-
-Section "Install"
-  SetOutPath "$INSTDIR"
-  File "dist\py-fusion-gui.exe"
-  File "dist\py-fusion.exe"
-  File "LICENSE"
-  File "README.md"
-  WriteUninstaller "$INSTDIR\uninstall.exe"
-  CreateDirectory "$SMPROGRAMS\Py-Fusion"
-  CreateShortcut "$SMPROGRAMS\Py-Fusion\Py-Fusion.lnk" "$INSTDIR\py-fusion-gui.exe"
-  CreateShortcut "$SMPROGRAMS\Py-Fusion\Uninstall.lnk" "$INSTDIR\uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion" "DisplayName" "Py-Fusion"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-SectionEnd
-
-Section "Uninstall"
-  Delete "$INSTDIR\py-fusion-gui.exe"
-  Delete "$INSTDIR\py-fusion.exe"
-  Delete "$INSTDIR\LICENSE"
-  Delete "$INSTDIR\README.md"
-  Delete "$INSTDIR\uninstall.exe"
-  RMDir "$INSTDIR"
-  Delete "$SMPROGRAMS\Py-Fusion\Py-Fusion.lnk"
-  Delete "$SMPROGRAMS\Py-Fusion\Uninstall.lnk"
-  RMDir "$SMPROGRAMS\Py-Fusion"
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion"
-SectionEnd
-'@
+        # Write the content to the file
+        $nsiContent | Out-File -FilePath installer.nsi -Encoding utf8
 
         # Build installer
         & 'C:\Program Files (x86)\NSIS\makensis.exe' installer.nsi
