@@ -11,7 +11,7 @@ import platform
 
 def get_platform():
     """Get the current platform.
-    
+
     Returns:
         str: 'windows', 'macos', or 'linux'
     """
@@ -25,12 +25,12 @@ def get_platform():
 
 def is_dark_mode_enabled():
     """Check if the system is using dark mode.
-    
+
     Returns:
         bool: True if dark mode is enabled, False otherwise
     """
     platform_name = get_platform()
-    
+
     if platform_name == 'macos':
         try:
             # macOS dark mode detection
@@ -60,7 +60,7 @@ def is_dark_mode_enabled():
 
 def get_home_directory():
     """Get the user's home directory.
-    
+
     Returns:
         str: Path to the user's home directory
     """
@@ -68,12 +68,12 @@ def get_home_directory():
 
 def get_documents_directory():
     """Get the user's documents directory.
-    
+
     Returns:
         str: Path to the user's documents directory
     """
     platform_name = get_platform()
-    
+
     if platform_name == 'windows':
         # Windows
         import ctypes.wintypes
@@ -90,10 +90,10 @@ def get_documents_directory():
 
 def fix_path_for_platform(path):
     """Fix a path for the current platform.
-    
+
     Args:
         path: Path to fix
-        
+
     Returns:
         str: Fixed path
     """
@@ -101,3 +101,74 @@ def fix_path_for_platform(path):
     if get_platform() == 'windows':
         return path.replace('/', '\\')
     return path
+
+def get_multiple_directories(parent=None, title="Select Folders", directory=None):
+    """Get multiple directories using the native file dialog.
+
+    This function uses the native file dialog on macOS (NSOpenPanel) and falls back
+    to the Qt dialog on other platforms.
+
+    Args:
+        parent: Parent widget
+        title: Dialog title
+        directory: Initial directory
+
+    Returns:
+        list: List of selected directory paths, or empty list if canceled
+    """
+    platform_name = get_platform()
+
+    if platform_name == 'macos':
+        try:
+            # Try to use PyObjC to access the native macOS file dialog
+            from AppKit import NSOpenPanel, NSApp
+            from PyQt6.QtWidgets import QApplication
+
+            # Create and configure the open panel
+            panel = NSOpenPanel.openPanel()
+            panel.setCanChooseDirectories_(True)
+            panel.setCanChooseFiles_(False)
+            panel.setAllowsMultipleSelection_(True)
+
+            if title:
+                panel.setTitle_(title)
+
+            if directory:
+                from Foundation import NSURL
+                url = NSURL.fileURLWithPath_(directory)
+                panel.setDirectoryURL_(url)
+
+            # Run the panel
+            if panel.runModal() == 1:  # NSModalResponseOK
+                # Get the selected URLs and convert them to paths
+                urls = panel.URLs()
+                return [url.path() for url in urls]
+            return []
+        except ImportError:
+            # PyObjC not available, fall back to Qt dialog
+            print("PyObjC not available, falling back to Qt dialog")
+            pass
+
+    # For other platforms or if PyObjC failed, use the Qt dialog
+    from PyQt6.QtWidgets import QFileDialog, QListView, QTreeView
+
+    dialog = QFileDialog(parent)
+    dialog.setFileMode(QFileDialog.FileMode.Directory)
+    dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)  # Required for multiple selection
+    dialog.setWindowTitle(title)
+
+    if directory:
+        dialog.setDirectory(directory)
+
+    # Enable multiple selection
+    listView = dialog.findChild(QListView, "listView")
+    if listView:
+        listView.setSelectionMode(QListView.SelectionMode.ExtendedSelection)
+    treeView = dialog.findChild(QTreeView, "treeView")
+    if treeView:
+        treeView.setSelectionMode(QTreeView.SelectionMode.ExtendedSelection)
+
+    # Show the dialog
+    if dialog.exec():
+        return dialog.selectedFiles()
+    return []

@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QStatusBar, QToolBar, QMenu, QMenuBar, QMessageBox, QDialog,
     QDialogButtonBox, QCheckBox, QComboBox, QGroupBox, QRadioButton,
     QSpinBox, QLineEdit, QTextEdit, QScrollArea, QSizePolicy, QFrame,
-    QToolButton
+    QToolButton, QListView, QTreeView
 )
 from PyQt6.QtGui import QAction
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QSettings, QTimer
@@ -138,11 +138,12 @@ class MainWindow(QMainWindow):
         # File menu
         file_menu = QMenu("&File", self)
 
-        # Add source folder action
+        # Add source folders action
         add_source_action = QAction(
             qta.icon('fa5s.folder-plus', color='#2196F3'),
-            "Add Source Folder", self
+            "Add Source Folders", self
         )
+        add_source_action.setToolTip("Add one or more source folders (multiple selection supported)")
         add_source_action.triggered.connect(self._on_add_source_clicked)
         file_menu.addAction(add_source_action)
 
@@ -239,7 +240,8 @@ class MainWindow(QMainWindow):
         # Source buttons
         source_buttons_layout = QHBoxLayout()
 
-        add_source_btn = QPushButton(qta.icon('fa5s.folder-plus'), "Add")
+        add_source_btn = QPushButton(qta.icon('fa5s.folder-plus'), "Add Folders")
+        add_source_btn.setToolTip("Add one or more source folders (multiple selection supported)")
         add_source_btn.clicked.connect(self._on_add_source_clicked)
         source_buttons_layout.addWidget(add_source_btn)
 
@@ -353,24 +355,34 @@ class MainWindow(QMainWindow):
     # Event handlers
     def _on_add_source_clicked(self):
         """Handle add source folder button click."""
-        folder = QFileDialog.getExistingDirectory(
-            self, "Select Source Folder", os.path.expanduser("~")
+        # Use the platform-specific function to get multiple directories
+        from py_fusion_gui.utils.platform_utils import get_multiple_directories
+
+        folders = get_multiple_directories(
+            parent=self,
+            title="Select Source Folders",
+            directory=os.path.expanduser("~")
         )
 
-        if folder:
-            # Validate that the folder exists
-            if not os.path.exists(folder):
-                QMessageBox.warning(
-                    self,
-                    "Invalid Folder",
-                    f"The selected folder does not exist: {folder}"
-                )
-                return
+        if folders:
+            # Get current items in the list
+            current_items = [self.source_list.item(i).text() for i in range(self.source_list.count())]
 
-            # Check if folder is already in the list
-            items = [self.source_list.item(i).text() for i in range(self.source_list.count())]
-            if folder not in items:
-                self.source_list.addItem(folder)
+            # Add each selected folder if it's valid and not already in the list
+            added_folders = False
+            for folder in folders:
+                # Validate that the folder exists
+                if not os.path.exists(folder):
+                    print(f"Source folder does not exist, skipping: {folder}")
+                    continue
+
+                # Check if folder is already in the list
+                if folder not in current_items:
+                    self.source_list.addItem(folder)
+                    added_folders = True
+
+            # Update source folders if any were added
+            if added_folders:
                 self._update_source_folders()
 
     def _on_remove_source_clicked(self):

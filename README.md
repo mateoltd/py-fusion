@@ -19,6 +19,7 @@ A tool for merging multiple resource folders into one, intelligently handling du
 - Python 3.9 or higher
 - PyQt6 6.5.0 or higher (for the GUI version)
 - QtAwesome 1.2.3 or higher (for the GUI version)
+- PyObjC 9.0.1 or higher (optional, for native macOS file dialogs)
 
 ## Installation
 
@@ -72,7 +73,7 @@ python run_py_fusion_gui.py
 ```
 
 The GUI provides a more user-friendly way to:
-- Select source and destination folders
+- Select source and destination folders (with multiple folder selection support)
 - Analyze the merge operation before executing it
 - View detailed statistics and progress
 - Use dark or light theme
