@@ -5,6 +5,7 @@ This module defines the main application window and its UI components.
 """
 
 import os
+import sys
 import qtawesome as qta
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -37,6 +38,17 @@ class MainWindow(QMainWindow):
         # Set window properties
         self.setWindowTitle("Py-Fusion")
         self.setMinimumSize(900, 600)
+
+        # Set window icon (this ensures the icon is used in the window title bar as well)
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "icons")
+
+        # Try to load platform-specific icon first, then fall back to PNG
+        if sys.platform == "win32" and os.path.exists(os.path.join(icon_path, "py_fusion.ico")):
+            self.setWindowIcon(QIcon(os.path.join(icon_path, "py_fusion.ico")))
+        elif sys.platform == "darwin" and os.path.exists(os.path.join(icon_path, "py_fusion.icns")):
+            self.setWindowIcon(QIcon(os.path.join(icon_path, "py_fusion.icns")))
+        elif os.path.exists(os.path.join(icon_path, "py_fusion.png")):
+            self.setWindowIcon(QIcon(os.path.join(icon_path, "py_fusion.png")))
 
         # Initialize UI components
         self._init_ui()
