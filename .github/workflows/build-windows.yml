@@ -11,77 +11,82 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Set up Python 3.9
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
         pip install pywin32
-        
+
     - name: Build CLI version
       run: |
         pyinstaller --name py-fusion --onefile index.py
-        
+
     - name: Build GUI version
       run: |
         pyinstaller --name py-fusion-gui --onefile --windowed --icon=py_fusion_gui/resources/icons/py_fusion.ico run_py_fusion_gui.py
-        
+
     - name: Create installer for GUI version
       run: |
         # Install NSIS
         choco install nsis -y
-        
+
         # Create NSIS script
-        echo '!include "MUI2.nsh"' > installer.nsi
-        echo 'Name "Py-Fusion"' >> installer.nsi
-        echo 'OutFile "dist\Py-Fusion-Setup.exe"' >> installer.nsi
-        echo 'InstallDir "$PROGRAMFILES\Py-Fusion"' >> installer.nsi
-        echo 'RequestExecutionLevel admin' >> installer.nsi
-        echo '!insertmacro MUI_PAGE_WELCOME' >> installer.nsi
-        echo '!insertmacro MUI_PAGE_DIRECTORY' >> installer.nsi
-        echo '!insertmacro MUI_PAGE_INSTFILES' >> installer.nsi
-        echo '!insertmacro MUI_PAGE_FINISH' >> installer.nsi
-        echo '!insertmacro MUI_UNPAGE_CONFIRM' >> installer.nsi
-        echo '!insertmacro MUI_UNPAGE_INSTFILES' >> installer.nsi
-        echo '!insertmacro MUI_LANGUAGE "English"' >> installer.nsi
-        echo 'Section "Install"' >> installer.nsi
-        echo '  SetOutPath "$INSTDIR"' >> installer.nsi
-        echo '  File "dist\py-fusion-gui.exe"' >> installer.nsi
-        echo '  File "dist\py-fusion.exe"' >> installer.nsi
-        echo '  File "LICENSE"' >> installer.nsi
-        echo '  File "README.md"' >> installer.nsi
-        echo '  WriteUninstaller "$INSTDIR\uninstall.exe"' >> installer.nsi
-        echo '  CreateDirectory "$SMPROGRAMS\Py-Fusion"' >> installer.nsi
-        echo '  CreateShortcut "$SMPROGRAMS\Py-Fusion\Py-Fusion.lnk" "$INSTDIR\py-fusion-gui.exe"' >> installer.nsi
-        echo '  CreateShortcut "$SMPROGRAMS\Py-Fusion\Uninstall.lnk" "$INSTDIR\uninstall.exe"' >> installer.nsi
-        echo '  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion" "DisplayName" "Py-Fusion"' >> installer.nsi
-        echo '  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""' >> installer.nsi
-        echo 'SectionEnd' >> installer.nsi
-        echo 'Section "Uninstall"' >> installer.nsi
-        echo '  Delete "$INSTDIR\py-fusion-gui.exe"' >> installer.nsi
-        echo '  Delete "$INSTDIR\py-fusion.exe"' >> installer.nsi
-        echo '  Delete "$INSTDIR\LICENSE"' >> installer.nsi
-        echo '  Delete "$INSTDIR\README.md"' >> installer.nsi
-        echo '  Delete "$INSTDIR\uninstall.exe"' >> installer.nsi
-        echo '  RMDir "$INSTDIR"' >> installer.nsi
-        echo '  Delete "$SMPROGRAMS\Py-Fusion\Py-Fusion.lnk"' >> installer.nsi
-        echo '  Delete "$SMPROGRAMS\Py-Fusion\Uninstall.lnk"' >> installer.nsi
-        echo '  RMDir "$SMPROGRAMS\Py-Fusion"' >> installer.nsi
-        echo '  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion"' >> installer.nsi
-        echo 'SectionEnd' >> installer.nsi
-        
+        Set-Content -Path installer.nsi -Value @'
+!include "MUI2.nsh"
+Name "Py-Fusion"
+OutFile "dist\Py-Fusion-Setup.exe"
+InstallDir "$PROGRAMFILES\Py-Fusion"
+RequestExecutionLevel admin
+
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
+
+Section "Install"
+  SetOutPath "$INSTDIR"
+  File "dist\py-fusion-gui.exe"
+  File "dist\py-fusion.exe"
+  File "LICENSE"
+  File "README.md"
+  WriteUninstaller "$INSTDIR\uninstall.exe"
+  CreateDirectory "$SMPROGRAMS\Py-Fusion"
+  CreateShortcut "$SMPROGRAMS\Py-Fusion\Py-Fusion.lnk" "$INSTDIR\py-fusion-gui.exe"
+  CreateShortcut "$SMPROGRAMS\Py-Fusion\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion" "DisplayName" "Py-Fusion"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+SectionEnd
+
+Section "Uninstall"
+  Delete "$INSTDIR\py-fusion-gui.exe"
+  Delete "$INSTDIR\py-fusion.exe"
+  Delete "$INSTDIR\LICENSE"
+  Delete "$INSTDIR\README.md"
+  Delete "$INSTDIR\uninstall.exe"
+  RMDir "$INSTDIR"
+  Delete "$SMPROGRAMS\Py-Fusion\Py-Fusion.lnk"
+  Delete "$SMPROGRAMS\Py-Fusion\Uninstall.lnk"
+  RMDir "$SMPROGRAMS\Py-Fusion"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Py-Fusion"
+SectionEnd
+'@
+
         # Build installer
         & 'C:\Program Files (x86)\NSIS\makensis.exe' installer.nsi
-        
+
     - name: Create ZIP for CLI version
       run: |
         mkdir -p dist/py-fusion-cli-windows
@@ -89,21 +94,21 @@ jobs:
         cp LICENSE dist/py-fusion-cli-windows/
         cp README.md dist/py-fusion-cli-windows/
         Compress-Archive -Path dist/py-fusion-cli-windows/* -DestinationPath dist/py-fusion-cli-windows.zip
-        
+
     - name: Upload CLI artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: py-fusion-cli-windows
         path: dist/py-fusion-cli-windows.zip
-        
+
     - name: Upload GUI artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: py-fusion-gui-windows
         path: dist/Py-Fusion-Setup.exe
-        
+
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |

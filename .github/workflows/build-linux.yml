@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Set up Python 3.9
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
         
@@ -45,18 +45,21 @@ jobs:
         sudo apt-get install -y fuse libfuse2
         wget -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
         chmod +x appimagetool
-        
+        # Make AppImageTool executable in place
+        sudo mv appimagetool /usr/local/bin/
+        sudo chmod +x /usr/local/bin/appimagetool
+
         # Create AppDir structure
         mkdir -p AppDir/usr/bin
         mkdir -p AppDir/usr/share/applications
         mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
-        
+
         # Copy executable
         cp dist/py-fusion-gui AppDir/usr/bin/
-        
+
         # Copy icon
         cp py_fusion_gui/resources/icons/py_fusion_256.png AppDir/usr/share/icons/hicolor/256x256/apps/py-fusion.png
-        
+
         # Create desktop file
         cat > AppDir/usr/share/applications/py-fusion.desktop << EOF
         [Desktop Entry]
@@ -68,19 +71,19 @@ jobs:
         EOF
         
         # Create AppRun file
-        cat > AppDir/AppRun << EOF
-        #!/bin/bash
-        SELF=\$(readlink -f "\$0")
-        HERE=\${SELF%/*}
-        export PATH="\${HERE}/usr/bin:\${PATH}"
-        "\${HERE}/usr/bin/py-fusion-gui" "\$@"
-        EOF
-        
+        cat > AppDir/AppRun << 'EOF'
+#!/bin/bash
+SELF=$(readlink -f "$0")
+HERE=${SELF%/*}
+export PATH="${HERE}/usr/bin:${PATH}"
+"${HERE}/usr/bin/py-fusion-gui" "$@"
+EOF
+
         chmod +x AppDir/AppRun
-        
+
         # Create AppImage
-        ./appimagetool AppDir dist/Py-Fusion-x86_64.AppImage
-        
+        /usr/local/bin/appimagetool AppDir dist/Py-Fusion-x86_64.AppImage
+
     - name: Create tarball for CLI version
       run: |
         mkdir -p dist/py-fusion-cli-linux
@@ -90,19 +93,19 @@ jobs:
         tar -czvf dist/py-fusion-cli-linux.tar.gz -C dist py-fusion-cli-linux
         
     - name: Upload CLI artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: py-fusion-cli-linux
         path: dist/py-fusion-cli-linux.tar.gz
         
     - name: Upload GUI artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: py-fusion-gui-linux
         path: dist/Py-Fusion-x86_64.AppImage
         
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
