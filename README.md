@@ -13,6 +13,7 @@ A tool for merging multiple resource folders into one, intelligently handling du
 - Detailed operation statistics
 - Support for glob patterns to select source folders
 - Automatic caching of empty source folders after merging (with ability to restore them later)
+- Backup and undo functionality to revert merge operations
 
 ## Requirements
 
@@ -94,6 +95,7 @@ The GUI provides a more user-friendly way to:
 - View detailed statistics and progress
 - Use dark or light theme
 - Manage cached empty folders
+- Create backups for undo functionality
 
 #### Cached Empty Folders
 
@@ -104,6 +106,18 @@ When a source folder becomes empty after merging (all files moved to destination
 - Delete the folder permanently
 
 To manage cached folders, go to Edit > Manage Cached Empty Folders in the menu.
+
+#### Backup and Undo Functionality
+
+By default, the application creates backup files that allow you to undo merge operations. This feature:
+
+- Records all file operations during a merge
+- Creates a backup file that can be used to restore files to their original locations
+- Provides a simple interface to manage and restore backups
+
+To manage backups and undo operations, go to Options > Manage Backups in the menu.
+
+You can disable backup creation by toggling the "Create Backup for Undo" option in the Options menu.
 
 #### Hidden Files
 

@@ -31,6 +31,7 @@ class MainWindow(QMainWindow):
     merge_requested = pyqtSignal(bool)  # bool: simulate
     cancel_requested = pyqtSignal()
     include_hidden_changed = pyqtSignal(bool)  # bool: include_hidden
+    create_backup_changed = pyqtSignal(bool)  # bool: create_backup
 
     def __init__(self):
         """Initialize the main window."""
@@ -236,6 +237,19 @@ class MainWindow(QMainWindow):
         self.include_hidden_action.setToolTip("Include hidden files and folders (like .DS_Store) in the merge operation")
         self.include_hidden_action.triggered.connect(self._on_include_hidden_toggled)
         options_menu.addAction(self.include_hidden_action)
+
+        # Create backup action
+        self.create_backup_action = QAction("Create Backup for Undo", self)
+        self.create_backup_action.setCheckable(True)
+        self.create_backup_action.setChecked(True)  # Default
+        self.create_backup_action.setToolTip("Create a backup file that allows undoing the merge operation")
+        self.create_backup_action.triggered.connect(self._on_create_backup_toggled)
+        options_menu.addAction(self.create_backup_action)
+
+        # Manage backups action
+        manage_backups_action = QAction(qta.icon('fa5s.history'), "Manage Backups", self)
+        manage_backups_action.triggered.connect(self._on_manage_backups_clicked)
+        options_menu.addAction(manage_backups_action)
 
         # Add menus to menu bar
         menu_bar.addMenu(file_menu)
@@ -518,6 +532,21 @@ class MainWindow(QMainWindow):
         # Emit a signal to notify that the include_hidden setting has changed
         self.include_hidden_changed.emit(checked)
 
+    def _on_create_backup_toggled(self, checked):
+        """Handle create backup toggle.
+
+        Args:
+            checked: Whether the option is checked
+        """
+        # Emit a signal to notify that the create_backup setting has changed
+        self.create_backup_changed.emit(checked)
+
+    def _on_manage_backups_clicked(self):
+        """Handle manage backups button click."""
+        from py_fusion_gui.views.backup_dialog import BackupDialog
+        dialog = BackupDialog(self)
+        dialog.exec()
+
     def _update_source_folders(self):
         """Update the list of source folders and emit signal."""
         folders = [self.source_list.item(i).text() for i in range(self.source_list.count())]
@@ -625,6 +654,14 @@ class MainWindow(QMainWindow):
             include_hidden: Whether to include hidden files
         """
         self.include_hidden_action.setChecked(include_hidden)
+
+    def set_create_backup(self, create_backup):
+        """Set the create backup option.
+
+        Args:
+            create_backup: Whether to create backup files
+        """
+        self.create_backup_action.setChecked(create_backup)
 
     def set_operation_in_progress(self, in_progress):
         """Set the UI state based on whether an operation is in progress.

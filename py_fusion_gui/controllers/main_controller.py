@@ -10,6 +10,7 @@ from PyQt6.QtCore import QObject, pyqtSlot, Qt
 from PyQt6.QtWidgets import QMessageBox
 from py_fusion_gui.models.merge_model import MergeModel
 from py_fusion_gui.models.analysis_model import AnalysisModel, FileAction
+from py_fusion_gui.utils.backup_manager import BackupManager
 
 class MainController(QObject):
     """Controller for the main application window."""
@@ -29,6 +30,7 @@ class MainController(QObject):
         # Create models
         self.merge_model = MergeModel()
         self.analysis_model = AnalysisModel()
+        self.backup_manager = BackupManager()
 
         # Current state
         self.source_folders = []
@@ -58,6 +60,7 @@ class MainController(QObject):
 
         # Settings signals
         self.view.include_hidden_changed.connect(self._on_include_hidden_changed)
+        self.view.create_backup_changed.connect(self._on_create_backup_changed)
 
     def _connect_model_signals(self):
         """Connect signals from the models."""
@@ -102,6 +105,7 @@ class MainController(QObject):
 
         # Load other settings
         self.view.set_include_hidden(self.settings_model.include_hidden_files)
+        self.view.set_create_backup(self.settings_model.create_backup)
 
     # View signal handlers
     @pyqtSlot(list)
@@ -157,14 +161,19 @@ class MainController(QObject):
         # Add destination folder
         self.settings_model.add_recent_destination(self.destination_folder)
 
-        # Get the include_hidden setting
+        # Get the settings
         include_hidden = self.settings_model.include_hidden_files
+        create_backup = self.settings_model.create_backup
 
         # Set the simulation flag
         self.last_merge_was_simulation = simulate
 
+        # Start backup tracking if enabled and not in simulation mode
+        if create_backup and not simulate:
+            self.backup_manager.start_backup(self.destination_folder, self.source_folders)
+
         # Start merge
-        self.merge_model.start_merge(self.destination_folder, self.source_folders, simulate, include_hidden)
+        self.merge_model.start_merge(self.destination_folder, self.source_folders, simulate, include_hidden, self.backup_manager if create_backup and not simulate else None)
 
     @pyqtSlot()
     def _on_cancel_requested(self):
@@ -316,6 +325,13 @@ class MainController(QObject):
         cached_folders = temp_manager.get_cached_folders_info()
         cached_folders_count = len(cached_folders)
 
+        # Save backup if enabled and not in simulation mode
+        backup_info = ""
+        if self.settings_model.create_backup and not self.last_merge_was_simulation:
+            backup_path = self.backup_manager.save_backup()
+            if backup_path:
+                backup_info = f"<li><b>Backup created</b> for undo (available in Options > Manage Backups)</li>"
+
         empty_folders_info = ""
         if cached_folders_count > 0:
             empty_folders_info = f"<li><b>{cached_folders_count}</b> empty source folders cached (available in Edit > Manage Cached Empty Folders)</li>"
@@ -331,6 +347,7 @@ class MainController(QObject):
             <li><b>{stats['files_renamed']}</b> files renamed</li>
             <li><b>{stats['directories_created']}</b> directories created</li>
             {empty_folders_info}
+            {backup_info}
         </ul>
         <p>Errors: <b>{stats['errors']}</b></p>
         """
@@ -343,6 +360,13 @@ class MainController(QObject):
         elif self.last_merge_was_simulation:
             empty_folders_msg = "\nNo folders cached (simulation mode)"
 
+        # Add backup info to message
+        backup_msg = ""
+        if self.settings_model.create_backup and not self.last_merge_was_simulation:
+            backup_path = self.backup_manager.get_backups()[0]['path'] if self.backup_manager.get_backups() else None
+            if backup_path:
+                backup_msg = "\nBackup created for undo (available in Options > Manage Backups)"
+
         QMessageBox.information(
             self.view,
             "Merge Completed",
@@ -353,6 +377,7 @@ class MainController(QObject):
             f"Directories created: {stats['directories_created']}\n"
             f"Errors: {stats['errors']}"
             f"{empty_folders_msg}"
+            f"{backup_msg}"
         )
 
     @pyqtSlot(str)
@@ -388,3 +413,20 @@ class MainController(QObject):
             self.view.set_status_message("Hidden files will be included in merge operations")
         else:
             self.view.set_status_message("Hidden files will be skipped in merge operations")
+
+    @pyqtSlot(bool)
+    def _on_create_backup_changed(self, create_backup):
+        """Handle create backup setting changed.
+
+        Args:
+            create_backup: Whether to create backup files
+        """
+        # Update the settings model
+        self.settings_model.create_backup = create_backup
+        self.settings_model.save_settings()
+
+        # Show a status message
+        if create_backup:
+            self.view.set_status_message("Backup files will be created for undo functionality")
+        else:
+            self.view.set_status_message("Backup files will not be created (undo functionality disabled)")

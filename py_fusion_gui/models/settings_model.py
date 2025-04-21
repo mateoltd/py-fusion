@@ -41,6 +41,7 @@ class SettingsModel:
         self.confirm_before_merge = self.settings.value("confirm_before_merge", True, type=bool)
         self.show_advanced_options = self.settings.value("show_advanced_options", False, type=bool)
         self.include_hidden_files = self.settings.value("include_hidden_files", False, type=bool)
+        self.create_backup = self.settings.value("create_backup", True, type=bool)
 
         print(f"Settings loaded. Recent sources: {self.recent_sources}")
 
@@ -53,6 +54,7 @@ class SettingsModel:
         self.settings.setValue("confirm_before_merge", self.confirm_before_merge)
         self.settings.setValue("show_advanced_options", self.show_advanced_options)
         self.settings.setValue("include_hidden_files", self.include_hidden_files)
+        self.settings.setValue("create_backup", self.create_backup)
         self.settings.sync()
 
         print(f"Settings saved. Recent sources: {self.recent_sources}")

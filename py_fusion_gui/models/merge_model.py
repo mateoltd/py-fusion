@@ -10,6 +10,7 @@ import sys
 import time
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
 from py_fusion_gui.utils.temp_folder_manager import TempFolderManager
+from py_fusion_gui.utils.backup_manager import BackupManager
 
 # Add the parent directory to sys.path to import the original merge functions
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -24,7 +25,7 @@ class MergeWorker(QThread):
     operation_completed = pyqtSignal(dict)
     operation_failed = pyqtSignal(str)
 
-    def __init__(self, destination, sources, simulate=False, include_hidden=False):
+    def __init__(self, destination, sources, simulate=False, include_hidden=False, backup_manager=None):
         """Initialize the merge worker.
 
         Args:
@@ -32,12 +33,14 @@ class MergeWorker(QThread):
             sources: List of source folder paths
             simulate: Whether to run in simulation mode
             include_hidden: Whether to include hidden files in the merge
+            backup_manager: Optional backup manager for recording operations
         """
         super().__init__()
         self.destination = destination
         self.sources = sources
         self.simulate = simulate
         self.include_hidden = include_hidden
+        self.backup_manager = backup_manager
         self.is_cancelled = False
 
     def run(self):
@@ -56,7 +59,7 @@ class MergeWorker(QThread):
             temp_manager = TempFolderManager()
 
             # Perform the merge
-            merge_folders(self.destination, self.sources, self.simulate, self.include_hidden)
+            merge_folders(self.destination, self.sources, self.simulate, self.include_hidden, self.backup_manager)
 
             # Check for empty source folders after merge and cache them (only if not in simulation mode)
             if not self.simulate:
@@ -120,7 +123,7 @@ class MergeModel(QObject):
         super().__init__()
         self.worker = None
 
-    def start_merge(self, destination, sources, simulate=False, include_hidden=False):
+    def start_merge(self, destination, sources, simulate=False, include_hidden=False, backup_manager=None):
         """Start a merge operation.
 
         Args:
@@ -128,9 +131,10 @@ class MergeModel(QObject):
             sources: List of source folder paths
             simulate: Whether to run in simulation mode
             include_hidden: Whether to include hidden files in the merge
+            backup_manager: Optional backup manager for recording operations
         """
         # Create and configure the worker
-        self.worker = MergeWorker(destination, sources, simulate, include_hidden)
+        self.worker = MergeWorker(destination, sources, simulate, include_hidden, backup_manager)
 
         # Connect signals
         self.worker.progress_updated.connect(self.progress_updated)

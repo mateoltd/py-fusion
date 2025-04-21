@@ -76,7 +76,7 @@ def setup_arguments() -> argparse.Namespace:
 
     return parser.parse_args()
 
-def move_or_rename(src_path: str, dst_path: str, simulate: bool = False) -> None:
+def move_or_rename(src_path: str, dst_path: str, simulate: bool = False, backup_manager=None) -> None:
     """
     Attempts to move a file from source to destination, handling duplicate cases.
 
@@ -95,6 +95,9 @@ def move_or_rename(src_path: str, dst_path: str, simulate: bool = False) -> None
             if filecmp.cmp(src_path, dst_path, shallow=False):
                 logger.info(f"Skipped (identical duplicate): {src_path}")
                 STATS['files_skipped'] += 1
+                # Record skip operation for backup
+                if backup_manager:
+                    backup_manager.record_file_operation("skip", src_path, dst_path)
                 return
             else:
                 # Find an available name by adding numeric suffix
@@ -107,6 +110,9 @@ def move_or_rename(src_path: str, dst_path: str, simulate: bool = False) -> None
                     if filecmp.cmp(src_path, new_dst, shallow=False):
                         logger.info(f"Skipped (identical duplicate): {src_path}")
                         STATS['files_skipped'] += 1
+                        # Record skip operation for backup
+                        if backup_manager:
+                            backup_manager.record_file_operation("skip", src_path, new_dst)
                         return
                     count += 1
                     new_name = f"{base}_{count}{ext}"
@@ -118,6 +124,9 @@ def move_or_rename(src_path: str, dst_path: str, simulate: bool = False) -> None
 
         if not simulate:
             shutil.move(src_path, dst_path)
+            # Record move operation for backup
+            if backup_manager:
+                backup_manager.record_file_operation("move", src_path, dst_path)
 
         logger.info(f"{'[SIMULATION] ' if simulate else ''}Moved: {src_path} -> {dst_path}")
         STATS['files_moved'] += 1
@@ -125,8 +134,11 @@ def move_or_rename(src_path: str, dst_path: str, simulate: bool = False) -> None
     except (PermissionError, OSError) as e:
         logger.error(f"Error moving {src_path}: {str(e)}")
         STATS['errors'] += 1
+        # Record error for backup
+        if backup_manager:
+            backup_manager.record_file_operation("error", src_path, dst_path, False, str(e))
 
-def merge_directories(source: str, destination: str, simulate: bool = False, include_hidden: bool = False) -> None:
+def merge_directories(source: str, destination: str, simulate: bool = False, include_hidden: bool = False, backup_manager=None) -> None:
     """
     Recursively merges the content of the 'source' folder into the 'destination' folder.
 
@@ -163,9 +175,9 @@ def merge_directories(source: str, destination: str, simulate: bool = False, inc
                 continue
 
             if os.path.isdir(src_path):
-                merge_directories(src_path, dst_path, simulate, include_hidden)
+                merge_directories(src_path, dst_path, simulate, include_hidden, backup_manager)
             else:
-                move_or_rename(src_path, dst_path, simulate)
+                move_or_rename(src_path, dst_path, simulate, backup_manager)
 
     except (PermissionError, OSError) as e:
         logger.error(f"Error processing directory {source}: {str(e)}")
@@ -194,7 +206,7 @@ def get_source_folders(args: argparse.Namespace) -> List[str]:
             "RESOURCES 15"
         ]
 
-def merge_folders(destination: str, source_folders: List[str], simulate: bool = False, include_hidden: bool = False) -> None:
+def merge_folders(destination: str, source_folders: List[str], simulate: bool = False, include_hidden: bool = False, backup_manager=None) -> None:
     """
     Merges multiple source folders into a destination folder.
 
@@ -236,9 +248,9 @@ def merge_folders(destination: str, source_folders: List[str], simulate: bool = 
                     continue
 
                 if os.path.isdir(src_item_path):
-                    merge_directories(src_item_path, dst_item_path, simulate, include_hidden)
+                    merge_directories(src_item_path, dst_item_path, simulate, include_hidden, backup_manager)
                 else:
-                    move_or_rename(src_item_path, dst_item_path, simulate)
+                    move_or_rename(src_item_path, dst_item_path, simulate, backup_manager)
 
     except Exception as e:
         logger.error(f"Error during merge: {str(e)}")
