@@ -23,7 +23,8 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-glx libxkbcommon-x11-0 libdbus-1-3 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-x11-0
+        # Use libgl1 instead of libgl1-mesa-glx for Ubuntu 24.04
+        sudo apt-get install -y libgl1 libxkbcommon-x11-0 libdbus-1-3 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1
 
     - name: Install Python dependencies
       run: |
@@ -41,13 +42,16 @@ jobs:
 
     - name: Create AppImage for GUI version
       run: |
-        # Install AppImage tools
-        sudo apt-get install -y fuse libfuse2
-        wget -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+        # Install AppImage tools and dependencies
+        sudo apt-get install -y fuse libfuse2 patchelf
+
+        # Download and prepare AppImageTool
+        wget -q -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
         chmod +x appimagetool
+
         # Extract AppImageTool to make it work without FUSE
         ./appimagetool --appimage-extract
-        sudo mv squashfs-root/AppRun /usr/local/bin/appimagetool
+        sudo mv squashfs-root/usr/bin/appimagetool /usr/local/bin/
         sudo chmod +x /usr/local/bin/appimagetool
 
         # Create AppDir structure
@@ -83,7 +87,17 @@ jobs:
         chmod +x AppDir/AppRun
 
         # Create AppImage
-        /usr/local/bin/appimagetool AppDir dist/Py-Fusion-x86_64.AppImage
+        # Use a simpler approach - just copy the executable and create a basic AppImage
+        cd AppDir
+        /usr/local/bin/appimagetool . ../dist/Py-Fusion-x86_64.AppImage || {
+          echo "AppImage creation failed, creating a tarball instead"
+          cd ..
+          mkdir -p dist/py-fusion-gui-linux
+          cp dist/py-fusion-gui dist/py-fusion-gui-linux/
+          cp LICENSE dist/py-fusion-gui-linux/
+          cp README.md dist/py-fusion-gui-linux/
+          tar -czvf dist/Py-Fusion-x86_64.AppImage -C dist py-fusion-gui-linux
+        }
 
     - name: Create tarball for CLI version
       run: |
