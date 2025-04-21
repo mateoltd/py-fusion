@@ -23,7 +23,23 @@ A tool for merging multiple resource folders into one, intelligently handling du
 
 ## Installation
 
-### Using Conda (Recommended)
+### Pre-built Binaries
+
+You can download pre-built binaries for macOS, Linux, and Windows from the [Releases](https://github.com/mateoltd/py-fusion/releases) page.
+
+#### macOS
+- CLI Version: Download and make executable with `chmod +x py-fusion`
+- GUI Version: Download the DMG file, open it, and drag the application to your Applications folder
+
+#### Linux
+- CLI Version: Download the tarball, extract it, and make the executable file executable with `chmod +x py-fusion`
+- GUI Version: Download the AppImage, make it executable with `chmod +x Py-Fusion-x86_64.AppImage`, and run it
+
+#### Windows
+- CLI Version: Download the ZIP file, extract it, and run the executable
+- GUI Version: Download the installer and run it
+
+### Using Conda (Recommended for Development)
 
 1. Clone or download this repository:
 
@@ -209,6 +225,41 @@ python -c "import re; f=open('py_fusion_gui/views/main_window.py', 'r'); content
 ```
 
 Or manually edit the file `py_fusion_gui/views/main_window.py` and change `QListWidget.Item` to `QListWidgetItem` on line 523.
+
+## Building from Source
+
+### Building with PyInstaller
+
+1. Install PyInstaller:
+
+```bash
+pip install pyinstaller
+```
+
+2. Build the CLI version:
+
+```bash
+pyinstaller --name py-fusion --onefile index.py
+```
+
+3. Build the GUI version:
+
+```bash
+pyinstaller --name py-fusion-gui --onefile --windowed run_py_fusion_gui.py
+```
+
+The built executables will be in the `dist` directory.
+
+### Building with GitHub Actions
+
+This repository includes GitHub Actions workflows that automatically build the application for macOS, Linux, and Windows. To use them:
+
+1. Fork this repository
+2. Go to the Actions tab in your forked repository
+3. Enable workflows if they are disabled
+4. Run the "Build All Platforms" workflow manually, or push a tag starting with "v" (e.g., "v1.0.0")
+
+The built applications will be available as artifacts in the workflow run, and also as assets in the GitHub Release if you pushed a tag.
 
 ## Contributing
 
