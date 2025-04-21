@@ -58,13 +58,14 @@ class MergeWorker(QThread):
             # Perform the merge
             merge_folders(self.destination, self.sources, self.simulate, self.include_hidden)
 
-            # Check for empty source folders after merge and cache them
-            for source in self.sources:
-                if os.path.exists(source) and temp_manager.is_empty_folder(source):
-                    self.operation_started.emit(f"Caching empty source folder: {source}")
-                    cached_path = temp_manager.cache_empty_folder(source)
-                    if cached_path:
-                        self.operation_started.emit(f"Cached empty source folder: {source} -> {cached_path}")
+            # Check for empty source folders after merge and cache them (only if not in simulation mode)
+            if not self.simulate:
+                for source in self.sources:
+                    if os.path.exists(source) and temp_manager.is_empty_folder(source):
+                        self.operation_started.emit(f"Caching empty source folder: {source}")
+                        cached_path = temp_manager.cache_empty_folder(source)
+                        if cached_path:
+                            self.operation_started.emit(f"Cached empty source folder: {source} -> {cached_path}")
 
             # Emit completion signal with final stats
             self.operation_completed.emit(STATS.copy())

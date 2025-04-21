@@ -34,6 +34,7 @@ class MainController(QObject):
         self.source_folders = []
         self.destination_folder = ""
         self.operation_in_progress = False
+        self.last_merge_was_simulation = False
 
         # Connect view signals
         self._connect_view_signals()
@@ -158,6 +159,9 @@ class MainController(QObject):
 
         # Get the include_hidden setting
         include_hidden = self.settings_model.include_hidden_files
+
+        # Set the simulation flag
+        self.last_merge_was_simulation = simulate
 
         # Start merge
         self.merge_model.start_merge(self.destination_folder, self.source_folders, simulate, include_hidden)
@@ -315,6 +319,8 @@ class MainController(QObject):
         empty_folders_info = ""
         if cached_folders_count > 0:
             empty_folders_info = f"<li><b>{cached_folders_count}</b> empty source folders cached (available in Edit > Manage Cached Empty Folders)</li>"
+        elif self.last_merge_was_simulation:
+            empty_folders_info = "<li>No folders cached (simulation mode)</li>"
 
         summary = f"""
         <h2>Merge Completed</h2>
@@ -334,6 +340,8 @@ class MainController(QObject):
         empty_folders_msg = ""
         if cached_folders_count > 0:
             empty_folders_msg = f"\nEmpty source folders cached: {cached_folders_count} (available in Edit > Manage Cached Empty Folders)"
+        elif self.last_merge_was_simulation:
+            empty_folders_msg = "\nNo folders cached (simulation mode)"
 
         QMessageBox.information(
             self.view,
