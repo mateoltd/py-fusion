@@ -11,7 +11,7 @@ on:
 jobs:
   build-macos:
     runs-on: macos-latest
-    
+
     steps:
     - uses: actions/checkout@v4
 
@@ -19,51 +19,41 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.9'
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
-        
+
     - name: Build CLI version
       run: |
         pyinstaller --name py-fusion --onefile index.py
-        
+
     - name: Build GUI version
       run: |
         pyinstaller --name py-fusion-gui --onefile --windowed --icon=py_fusion_gui/resources/icons/py_fusion.icns run_py_fusion_gui.py
-        
+
     - name: Create DMG for GUI version
       run: |
         # Create a directory for the app
         mkdir -p dist/dmg
         cp -r "dist/py-fusion-gui.app" dist/dmg/
-        
+
         # Create a symbolic link to /Applications
         ln -s /Applications dist/dmg/
-        
+
         # Create the DMG
         hdiutil create -volname "Py-Fusion" -srcfolder dist/dmg -ov -format UDZO dist/Py-Fusion.dmg
-        
+
     - name: Upload CLI artifact
       uses: actions/upload-artifact@v4
       with:
         name: py-fusion-cli-macos
         path: dist/py-fusion
-        
+
     - name: Upload GUI artifact
       uses: actions/upload-artifact@v4
       with:
         name: py-fusion-gui-macos
         path: dist/Py-Fusion.dmg
-        
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: |
-          dist/py-fusion
-          dist/Py-Fusion.dmg
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

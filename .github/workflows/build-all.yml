@@ -8,43 +8,45 @@ on:
 jobs:
   build-macos:
     uses: ./.github/workflows/build-macos.yml
-    
+
   build-linux:
     uses: ./.github/workflows/build-linux.yml
-    
+
   build-windows:
     uses: ./.github/workflows/build-windows.yml
-    
+
   create-release:
     needs: [build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    
+    permissions:
+      contents: write
+
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
         path: artifacts
-        
+
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
         name: Py-Fusion ${{ github.ref_name }}
         body: |
           # Py-Fusion ${{ github.ref_name }}
-          
+
           A modern tool for merging multiple folders intelligently.
-          
+
           ## Downloads
-          
+
           ### macOS
           - [CLI Version](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/py-fusion-cli-macos)
           - [GUI Version (DMG)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/Py-Fusion.dmg)
-          
+
           ### Linux
           - [CLI Version (tar.gz)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/py-fusion-cli-linux.tar.gz)
           - [GUI Version (AppImage)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/Py-Fusion-x86_64.AppImage)
-          
+
           ### Windows
           - [CLI Version (ZIP)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/py-fusion-cli-windows.zip)
           - [GUI Version (Installer)](https://github.com/mateoltd/py-fusion/releases/download/${{ github.ref_name }}/Py-Fusion-Setup.exe)
